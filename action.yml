@@ -1,0 +1,79 @@
+name: Node version bumper
+description: Bump version for node package 
+inputs:
+  node-version:
+    description: The version of node to use.
+    type: string
+    default: 20.x
+    required: false
+  npm-registry:
+    description: NPM registry
+    type: string
+    default: https://registry.npmjs.org/
+    required: false
+  working-directory:
+    description: package repository
+    type: string
+    default: '.'
+    required: false
+  is-workspace:
+    description: indicate if the package is a workspace
+    type: boolean
+    default: false
+    required: false
+  version:
+    type: string
+    required: true
+  preid:
+    type: string
+    default: ''
+    required: false
+  commiter-name:
+    type: string
+    default: Node Version Bumper
+    required: true
+  commiter-email:
+    type: string
+    default: <>
+    required: false
+  commit-message:
+    type: string
+    default: "ci(version): bump to v%s"
+    required: false
+
+outputs:
+  version:
+    description: Outputed version
+    value: ${{ steps.bump-ver.outputs.version || steps.bump-pre.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Bump Version
+      id: bump-ver
+      if: inputs.preid == ''
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        version=$(npm version ${{ inputs.version }} ${{ inputs.is-workspace == true && '-ws' || '' }} -m "${{ inputs.commit-message }}")
+        echo "version=$version" >> $GITHUB_OUTPUT
+
+    - name: Bump Pre Version
+      id: bump-per
+      if: inputs.preid != ''
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        version=$(npm version ${{ inputs.version }} --preid=${{ inputs.preid }} ${{ inputs.is-workspace == true && '-ws' || '' }} -m "${{ inputs.commit-message }}")
+        echo "version=$version" >> $GITHUB_OUTPUT
+
+    - name: Remove NPM tag
+      shell: bash
+      run: |
+        echo ${{ steps.bump-ver.outputs.version }}
+        echo ${{ steps.bump-pre.outputs.version }}
+        git tag -d ${{ steps.bump-ver.outputs.version || steps.bump-pre.outputs.version }}
