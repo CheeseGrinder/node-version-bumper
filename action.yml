@@ -1,7 +1,8 @@
 name: Node version bumper
 description: Bump version for node package 
-icon: arrow-up-circle
-color: green
+branding:
+  icon: arrow-up-circle
+  color: green
 
 inputs:
   node-version:
